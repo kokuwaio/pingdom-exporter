@@ -32,8 +32,12 @@ Usage of bin/pingdom-exporter:
       path under which to expose metrics (default "/metrics")
   -outage-check-period int
       time (in days) in which to retrieve outage data from the Pingdom API (default 7)
+  -parser-tags
+      Enable tag formatting based on a regular expression
   -port int
       port to listen on (default 9158)
+  -tag-format string
+      Regular expression used to format tags. (default "^([a-zA-Z0-9_]+):(.+)$")
   -tags string
       tag list separated by commas
 ```
@@ -58,6 +62,15 @@ metrics.
 
 You can also set the `-tags` flag to only return metrics for checks that contain
 the given tags.
+
+
+##### `-parser-tags` and `-tag-format` flag
+
+When this flag is enabled, the `pingdom_tags` metric will no longer be generated in favor of the `pingdom_tags_label` metric.
+
+With this flag, the tag will be formatted based on the regular expression specified in the `-tag-format` flag.
+
+If the tag is formatted correctly, the metric returns the value `1`, if not, it returns the value `0`.
 
 ### Docker Image
 
