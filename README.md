@@ -61,23 +61,23 @@ the given tags.
 
 ### Docker Image
 
-We no longer provide a public Docker image. See the **Development** section
-on how to build your own image and push it to your private registry.
+Docker image tags are published to [GHCR](https://github.com/kokuwaio/pingdom-exporter/pkgs/container/pingdom-exporter) as changes are incorporated into the main branch.
 
 ## Exported Metrics
 
-| Metric Name                                         | Description                                                                     |
-| --------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `pingdom_up`                                        | Was the last query on Pingdom API successful                                    |
-| `pingdom_uptime_status`                             | The current status of the check (1: up, 0: down)                                |
-| `pingdom_uptime_response_time_seconds`              | The response time of last test, in seconds                                      |
-| `pingdom_slo_period_seconds`                        | Outage check period, in seconds (see `-outage-check-period` flag)               |
-| `pingdom_outages_total`                             | Number of outages within the outage check period                                |
-| `pingdom_down_seconds`                              | Total down time within the outage check period, in seconds                      |
-| `pingdom_up_seconds`                                | Total up time within the outage check period, in seconds                        |
-| `pingdom_uptime_slo_error_budget_total_seconds`     | Maximum number of allowed downtime, in seconds, according to the uptime SLO     |
-| `pingdom_uptime_slo_error_budget_available_seconds` | Number of seconds of downtime we can still have without breaking the uptime SLO |
-| `pingdom_tags`                                      | The current tags of the check                                                   |
+| Metric Name                                         | Description                                                                                                   |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `pingdom_down_seconds`                              | Total down time within the outage check period, in seconds                                                    |
+| `pingdom_outages_total`                             | Number of outages within the outage check period                                                              |
+| `pingdom_slo_period_seconds`                        | Outage check period, in seconds (see `-outage-check-period` flag)                                             |
+| `pingdom_tags_label`                                | Formats a tag based on a regular expression (`-parser-tags` and `-tag-format`) (1: formatted, 0: unformatted) |
+| `pingdom_tags`                                      | The current tags of the check                                                                                 |
+| `pingdom_up_seconds`                                | Total up time within the outage check period, in seconds                                                      |
+| `pingdom_up`                                        | Was the last query on Pingdom API successful                                                                  |
+| `pingdom_uptime_response_time_seconds`              | The response time of last test, in seconds                                                                    |
+| `pingdom_uptime_slo_error_budget_available_seconds` | Number of seconds of downtime we can still have without breaking the uptime SLO                               |
+| `pingdom_uptime_slo_error_budget_total_seconds`     | Maximum number of allowed downtime, in seconds, according to the uptime SLO                                   |
+| `pingdom_uptime_status`                             | The current status of the check (1: up, 0: down)                                                              |
 
 ## Development
 

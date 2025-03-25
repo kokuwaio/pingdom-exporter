@@ -20,12 +20,14 @@ var (
 	// VERSION will hold the version number injected during the build.
 	VERSION string
 
-	token             string
-	tags              string
-	metricsPath       string
-	port              int
-	outageCheckPeriod int
 	defaultUptimeSLO  float64
+	metricsPath       string
+	outageCheckPeriod int
+	parserTags        bool
+	port              int
+	tagFormat        	string
+	tags              string
+	token             string
 
 	pingdomUpDesc = prometheus.NewDesc(
 		"pingdom_up",
@@ -43,6 +45,12 @@ var (
 		"pingdom_tags",
 		"The current tags of the check",
 		[]string{"id", "name", "type", "count"}, nil,
+	)
+
+	pingdomCheckTagsLabel = prometheus.NewDesc(
+		"pingdom_tags_label",
+		"Formatted tags and a <label_key>:<label_value> pattern based on a regular expression (1: formatted, 0: unformatted)",
+		[]string{"id", "label_key", "label_value", "name"}, nil,
 	)
 
 	pingdomCheckStatusDesc = prometheus.NewDesc(
@@ -94,6 +102,8 @@ func init() {
 	flag.Float64Var(&defaultUptimeSLO, "default-uptime-slo", 99.0, "default uptime SLO to be used when the check doesn't provide a uptime SLO tag (i.e. uptime_slo_999 to 99.9% uptime SLO)")
 	flag.StringVar(&metricsPath, "metrics-path", "/metrics", "path under which to expose metrics")
 	flag.StringVar(&tags, "tags", "", "tag list separated by commas")
+	flag.BoolVar(&parserTags, "parser-tags", false, "Enable tag formatting based on a regular expression")
+	flag.StringVar(&tagFormat, "tag-format", "^([a-zA-Z0-9_]+):(.+)$", "Regular expression used to format tags.")
 }
 
 type pingdomCollector struct {
@@ -101,16 +111,17 @@ type pingdomCollector struct {
 }
 
 func (pc pingdomCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- pingdomUpDesc
-	ch <- pingdomCheckTags
-	ch <- pingdomOutageCheckPeriodDesc
-	ch <- pingdomCheckStatusDesc
-	ch <- pingdomCheckResponseTimeDesc
 	ch <- pingdomCheckAvailableErrorBudgetDesc
 	ch <- pingdomCheckErrorBudgetDesc
+	ch <- pingdomCheckResponseTimeDesc
+	ch <- pingdomCheckStatusDesc
+	ch <- pingdomCheckTags
+	ch <- pingdomCheckTagsLabel
 	ch <- pingdomDownTimeDesc
-	ch <- pingdomUpTimeDesc
+	ch <- pingdomOutageCheckPeriodDesc
 	ch <- pingdomOutagesDesc
+	ch <- pingdomUpDesc
+	ch <- pingdomUpTimeDesc
 }
 
 func (pc pingdomCollector) Collect(ch chan<- prometheus.Metric) {
@@ -166,15 +177,29 @@ func (pc pingdomCollector) Collect(ch chan<- prometheus.Metric) {
 		}
 
 		for _, tag := range tags {
-			ch <- prometheus.MustNewConstMetric(
-				pingdomCheckTags,
-				prometheus.GaugeValue,
-				float64(1),
-				id,
-				tag.Name,
-				tag.Type,
-				fmt.Sprint(tag.Count),
-			)
+			if !parserTags {
+				ch <- prometheus.MustNewConstMetric(
+					pingdomCheckTags,
+					prometheus.GaugeValue,
+					float64(1),
+					id,
+					tag.Name,
+					tag.Type,
+					fmt.Sprint(tag.Count),
+				)
+			} else {
+
+				tagLabel, _ := pingdom.TagLabel(tag.Name, tagFormat)
+				ch <- prometheus.MustNewConstMetric(
+					pingdomCheckTagsLabel,
+					prometheus.GaugeValue,
+					float64(tagLabel.Formatted),
+					id,
+					tagLabel.LabelKey,
+					tagLabel.LabelValue,
+					tag.Name,
+				)
+			}
 		}
 
 		ch <- prometheus.MustNewConstMetric(
