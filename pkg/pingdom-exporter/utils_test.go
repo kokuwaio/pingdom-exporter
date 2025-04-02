@@ -8,19 +8,19 @@ import (
 
 func TestTagLabel(t *testing.T) {
 	testCases := []struct {
-		tag string
+		tag   string
 		regex string
 	}{
 		{
-			tag: "key:value",
+			tag:   "key:value",
 			regex: "^([a-zA-Z0-9_]+):(.+)$",
 		},
 		{
-			tag: "key-value",
+			tag:   "key-value",
 			regex: "^([a-zA-Z0-9_]+)-(.+)$",
 		},
 		{
-			tag: "key@value",
+			tag:   "key@value",
 			regex: "^([a-zA-Z0-9_]+)@(.+)$",
 		},
 	}

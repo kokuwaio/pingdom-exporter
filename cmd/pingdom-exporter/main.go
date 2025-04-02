@@ -25,75 +25,26 @@ var (
 	outageCheckPeriod int
 	parserTags        bool
 	port              int
-	tagFormat        	string
+	tagFormat         string
 	tags              string
+	tagExtraLabels    string
 	token             string
 
-	pingdomUpDesc = prometheus.NewDesc(
-		"pingdom_up",
-		"Whether the last pingdom scrape was successfull (1: up, 0: down).",
-		nil, nil,
-	)
+	extraLabelsMap      pingdom.ExtraLabel
+	extraLabelsMapOrder []string
+	isExtraLabels       bool
 
-	pingdomOutageCheckPeriodDesc = prometheus.NewDesc(
-		"pingdom_slo_period_seconds",
-		"Outage check period, in seconds",
-		nil, nil,
-	)
-
-	pingdomCheckTags = prometheus.NewDesc(
-		"pingdom_tags",
-		"The current tags of the check",
-		[]string{"id", "name", "type", "count"}, nil,
-	)
-
-	pingdomCheckTagsLabel = prometheus.NewDesc(
-		"pingdom_tags_label",
-		"Formatted tags and a <label_key>:<label_value> pattern based on a regular expression (1: formatted, 0: unformatted)",
-		[]string{"id", "label_key", "label_value", "name"}, nil,
-	)
-
-	pingdomCheckStatusDesc = prometheus.NewDesc(
-		"pingdom_uptime_status",
-		"The current status of the check (1: up, 0: down)",
-		[]string{"id", "name", "hostname", "resolution", "paused"}, nil,
-	)
-
-	pingdomCheckResponseTimeDesc = prometheus.NewDesc(
-		"pingdom_uptime_response_time_seconds",
-		"The response time of last test, in seconds",
-		[]string{"id", "name", "hostname", "resolution", "paused"}, nil,
-	)
-
-	pingdomOutagesDesc = prometheus.NewDesc(
-		"pingdom_outages_total",
-		"Number of outages within the outage check period",
-		[]string{"id", "name", "hostname"}, nil,
-	)
-
-	pingdomCheckErrorBudgetDesc = prometheus.NewDesc(
-		"pingdom_uptime_slo_error_budget_total_seconds",
-		"Maximum number of allowed downtime, in seconds, according to the uptime SLO",
-		[]string{"id", "name", "hostname"}, nil,
-	)
-
-	pingdomCheckAvailableErrorBudgetDesc = prometheus.NewDesc(
-		"pingdom_uptime_slo_error_budget_available_seconds",
-		"Number of seconds of downtime we can still have without breaking the uptime SLO",
-		[]string{"id", "name", "hostname"}, nil,
-	)
-
-	pingdomDownTimeDesc = prometheus.NewDesc(
-		"pingdom_down_seconds",
-		"Total down time within the outage check period, in seconds",
-		[]string{"id", "name", "hostname"}, nil,
-	)
-
-	pingdomUpTimeDesc = prometheus.NewDesc(
-		"pingdom_up_seconds",
-		"Total up time within the outage check period, in seconds",
-		[]string{"id", "name", "hostname"}, nil,
-	)
+	pingdomCheckAvailableErrorBudgetDesc *prometheus.Desc
+	pingdomCheckErrorBudgetDesc          *prometheus.Desc
+	pingdomCheckResponseTimeDesc         *prometheus.Desc
+	pingdomCheckStatusDesc               *prometheus.Desc
+	pingdomCheckTags                     *prometheus.Desc
+	pingdomCheckTagsLabel                *prometheus.Desc
+	pingdomDownTimeDesc                  *prometheus.Desc
+	pingdomOutageCheckPeriodDesc         *prometheus.Desc
+	pingdomOutagesDesc                   *prometheus.Desc
+	pingdomUpDesc                        *prometheus.Desc
+	pingdomUpTimeDesc                    *prometheus.Desc
 )
 
 func init() {
@@ -103,7 +54,8 @@ func init() {
 	flag.StringVar(&metricsPath, "metrics-path", "/metrics", "path under which to expose metrics")
 	flag.StringVar(&tags, "tags", "", "tag list separated by commas")
 	flag.BoolVar(&parserTags, "parser-tags", false, "Enable tag formatting based on a regular expression")
-	flag.StringVar(&tagFormat, "tag-format", "^([a-zA-Z0-9_]+):(.+)$", "Regular expression used to format tags.")
+	flag.StringVar(&tagFormat, "tag-format", "^([a-zA-Z0-9_]+):(.+)$", "Regular expression used to format tags")
+	flag.StringVar(&tagExtraLabels, "tag-extra-labels", "", "allows adding custom labels to metrics, ensuring they follow a consistent format with the label_ prefix. Requires -parser-tags=true")
 }
 
 type pingdomCollector struct {
@@ -111,6 +63,80 @@ type pingdomCollector struct {
 }
 
 func (pc pingdomCollector) Describe(ch chan<- *prometheus.Desc) {
+	pingdomCheckAvailableErrorBudgetDesc = prometheus.NewDesc(
+		"pingdom_uptime_slo_error_budget_available_seconds",
+		"Number of seconds of downtime we can still have without breaking the uptime SLO",
+		[]string{"id", "name", "hostname"}, nil,
+	)
+
+	pingdomCheckErrorBudgetDesc = prometheus.NewDesc(
+		"pingdom_uptime_slo_error_budget_total_seconds",
+		"Maximum number of allowed downtime, in seconds, according to the uptime SLO",
+		[]string{"id", "name", "hostname"}, nil,
+	)
+
+	pingdomCheckResponseTimeDesc = prometheus.NewDesc(
+		"pingdom_uptime_response_time_seconds",
+		"The response time of last test, in seconds",
+		[]string{"id", "name", "hostname", "resolution", "paused"}, nil,
+	)
+
+	pingdomCheckStatusDesc = prometheus.NewDesc(
+		"pingdom_uptime_status",
+		"The current status of the check (1: up, 0: down)",
+		[]string{"id", "name", "hostname", "resolution", "paused"}, nil,
+	)
+
+	pingdomCheckTags = prometheus.NewDesc(
+		"pingdom_tags",
+		"The current tags of the check",
+		[]string{"id", "name", "type", "count"}, nil,
+	)
+
+	if isExtraLabels {
+		pingdomCheckTagsLabel = prometheus.NewDesc(
+			"pingdom_tags_label",
+			"The current tags of the check",
+			append([]string{"id"}, pingdom.GetLabelNamesFromExtraLabels(extraLabelsMap)...), nil,
+		)
+	} else {
+		pingdomCheckTagsLabel = prometheus.NewDesc(
+			"pingdom_tags_label",
+			"The current tags of the check",
+			[]string{"id", "label_key", "label_value", "name"}, nil,
+		)
+	}
+
+	pingdomDownTimeDesc = prometheus.NewDesc(
+		"pingdom_down_seconds",
+		"Total down time within the outage check period, in seconds",
+		[]string{"id", "name", "hostname"}, nil,
+	)
+
+	pingdomOutageCheckPeriodDesc = prometheus.NewDesc(
+		"pingdom_slo_period_seconds",
+		"Outage check period, in seconds",
+		nil, nil,
+	)
+
+	pingdomOutagesDesc = prometheus.NewDesc(
+		"pingdom_outages_total",
+		"Number of outages within the outage check period",
+		[]string{"id", "name", "hostname"}, nil,
+	)
+
+	pingdomUpDesc = prometheus.NewDesc(
+		"pingdom_up",
+		"Whether the last pingdom scrape was successfull (1: up, 0: down).",
+		nil, nil,
+	)
+
+	pingdomUpTimeDesc = prometheus.NewDesc(
+		"pingdom_up_seconds",
+		"Total up time within the outage check period, in seconds",
+		[]string{"id", "name", "hostname"}, nil,
+	)
+
 	ch <- pingdomCheckAvailableErrorBudgetDesc
 	ch <- pingdomCheckErrorBudgetDesc
 	ch <- pingdomCheckResponseTimeDesc
@@ -176,8 +202,25 @@ func (pc pingdomCollector) Collect(ch chan<- prometheus.Metric) {
 			status = 1
 		}
 
+		tagExtraLabelsValuesMap := make(map[string]string)
+
 		for _, tag := range tags {
-			if !parserTags {
+			if parserTags {
+				tagLabel, _ := pingdom.TagLabel(tag.Name, tagFormat)
+				if isExtraLabels {
+					tagExtraLabelsValuesMap[tagLabel.LabelKey] = tagLabel.LabelValue
+				} else {
+					ch <- prometheus.MustNewConstMetric(
+						pingdomCheckTagsLabel,
+						prometheus.GaugeValue,
+						float64(tagLabel.Formatted),
+						id,
+						tagLabel.LabelKey,
+						tagLabel.LabelValue,
+						tag.Name,
+					)
+				}
+			} else {
 				ch <- prometheus.MustNewConstMetric(
 					pingdomCheckTags,
 					prometheus.GaugeValue,
@@ -187,19 +230,16 @@ func (pc pingdomCollector) Collect(ch chan<- prometheus.Metric) {
 					tag.Type,
 					fmt.Sprint(tag.Count),
 				)
-			} else {
-
-				tagLabel, _ := pingdom.TagLabel(tag.Name, tagFormat)
-				ch <- prometheus.MustNewConstMetric(
-					pingdomCheckTagsLabel,
-					prometheus.GaugeValue,
-					float64(tagLabel.Formatted),
-					id,
-					tagLabel.LabelKey,
-					tagLabel.LabelValue,
-					tag.Name,
-				)
 			}
+		}
+
+		if len(tagExtraLabelsValuesMap) > 0 {
+			ch <- prometheus.MustNewConstMetric(
+				pingdomCheckTagsLabel,
+				prometheus.GaugeValue,
+				float64(1),
+				append([]string{id}, pingdom.GetExtraLabelsValues(tagExtraLabelsValuesMap, extraLabelsMap, extraLabelsMapOrder)...)...,
+			)
 		}
 
 		ch <- prometheus.MustNewConstMetric(
@@ -327,6 +367,11 @@ func main() {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Cannot create Pingdom client, exiting")
 		os.Exit(1)
+	}
+
+	if parserTags && tagExtraLabels != "" {
+		extraLabelsMap, extraLabelsMapOrder = pingdom.ProcessExtraLabels(tagExtraLabels)
+		isExtraLabels = len(extraLabelsMap) > 0
 	}
 
 	registry := prometheus.NewPedanticRegistry()
