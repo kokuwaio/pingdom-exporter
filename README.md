@@ -36,6 +36,8 @@ Usage of bin/pingdom-exporter:
       Enable tag formatting based on a regular expression
   -port int
       port to listen on (default 9158)
+  -tag-extra-labels string
+      Extra labels to be added to the tags
   -tag-format string
       Regular expression used to format tags. (default "^([a-zA-Z0-9_]+):(.+)$")
   -tags string
@@ -63,14 +65,28 @@ metrics.
 You can also set the `-tags` flag to only return metrics for checks that contain
 the given tags.
 
+##### `-parser-tags`, `-tag-format` and `-tag-extra-labels` flag
 
-##### `-parser-tags` and `-tag-format` flag
-
-When this flag is enabled, the `pingdom_tags` metric will no longer be generated in favor of the `pingdom_tags_label` metric.
+When the `-parser-tags` flag is enabled, the `pingdom_tags` metric will no longer be generated in favor of the `pingdom_tags_label` metric.
 
 With this flag, the tag will be formatted based on the regular expression specified in the `-tag-format` flag.
 
-If the tag is formatted correctly, the metric returns the value `1`, if not, it returns the value `0`.
+If the tag is formatted correctly, the metric returns the value `1`; if not, it returns the value `0`.
+
+Additionally, the `-tag-extra-labels` flag allows extracting extra labels from tags.
+The labels must be specified as a comma-separated list, and each extracted label is converted to snake_case and prefixed with `label_`.
+
+For example, using:
+
+```shell
+-tag-extra-labels="region,team"
+```
+
+A Pingdom tag like `region:us-east` would result in the following metric:
+
+```bash
+pingdom_tags_label{id="123", label_region="us-east"}
+```
 
 ### Docker Image
 

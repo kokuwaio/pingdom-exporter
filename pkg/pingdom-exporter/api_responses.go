@@ -75,9 +75,9 @@ type CheckResponseType struct {
 
 // CheckResponseTag is an optional tag that can be added to checks.
 type CheckResponseTag struct {
-	Name  string      `json:"name"`
-	Type  string      `json:"type"`
-	Count float64     `json:"count"`
+	Name  string  `json:"name"`
+	Type  string  `json:"type"`
+	Count float64 `json:"count"`
 }
 
 // SummaryPerformanceResponse represents the JSON response for a summary performance from the Pingdom API.
@@ -161,7 +161,7 @@ func (r *Error) Error() string {
 	return fmt.Sprintf("%d %v: %v", r.StatusCode, r.StatusDesc, r.Message)
 }
 
-// Tags returns the check tags.
+// AllTags returns all tags associated with the check.
 func (cr *CheckResponse) AllTags() []CheckResponseTag {
 	return cr.Tags
 }

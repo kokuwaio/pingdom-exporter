@@ -3,6 +3,10 @@ BIN=pingdom-exporter
 IMAGE=kokuwaio/$(BIN)
 DOCKER_BIN=docker
 
+SRC_DIR = .
+GOFMT := gofmt
+GOFMT_FLAGS := -s -w
+
 TAG=$(shell git describe --tags)
 
 .PHONY: build
@@ -11,19 +15,19 @@ build:
 
 .PHONY: test
 test:
-	go vet ./...
-	go test -coverprofile=coverage.out ./...
+	go vet $(SRC_DIR)/...
+	go test -coverprofile=coverage.out $(SRC_DIR)/...
 	go tool cover -func=coverage.out
 
 .PHONY: lint
 lint:
 	go install golang.org/x/lint/golint@latest
-	golint ./...
+	golint $(SRC_DIR)/...
 
 # Build the Docker build stage TARGET
 .PHONY: image
 image:
-	$(DOCKER_BIN) build -t $(IMAGE):$(TAG) .
+	$(DOCKER_BIN) build -t $(IMAGE):$(TAG) $(SRC_DIR)
 
 # Push Docker images to the registry
 .PHONY: publish
@@ -31,3 +35,6 @@ publish:
 	$(DOCKER_BIN) push $(IMAGE):$(TAG)
 	$(DOCKER_BIN) tag $(IMAGE):$(TAG) $(IMAGE):latest
 	$(DOCKER_BIN) push $(IMAGE):latest
+
+fmt:
+	$(GOFMT) $(GOFMT_FLAGS) $(SRC_DIR)
