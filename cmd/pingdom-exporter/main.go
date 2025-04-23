@@ -184,7 +184,6 @@ func (pc pingdomCollector) Collect(ch chan<- prometheus.Metric) {
 	var wg sync.WaitGroup
 
 	for _, check := range checks {
-
 		// Ignore this check based on the presence of the ignore label
 		if check.HasIgnoreTag() {
 			continue
@@ -196,9 +195,10 @@ func (pc pingdomCollector) Collect(ch chan<- prometheus.Metric) {
 
 		var status float64
 		paused := "false"
-		if check.Status == "paused" {
+		switch check.Status {
+		case "paused":
 			paused = "true"
-		} else if check.Status == "up" {
+		case "up":
 			status = 1
 		}
 
@@ -295,7 +295,6 @@ func (pc pingdomCollector) Collect(ch chan<- prometheus.Metric) {
 					downTime = downTime + float64(state.ToTime-state.FromTime)
 				case "up":
 					upTime = upTime + float64(state.ToTime-state.FromTime)
-
 				}
 			}
 
@@ -400,5 +399,13 @@ func main() {
 	})
 
 	fmt.Fprintf(os.Stdout, "Pingdom Exporter %v listening on http://0.0.0.0:%v\n", VERSION, port)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
+	server := &http.Server{
+		Addr:              fmt.Sprintf(":%d", port),
+		Handler:           nil,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       120 * time.Second,
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+	log.Fatal(server.ListenAndServe())
 }

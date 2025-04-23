@@ -115,7 +115,7 @@ func (c *CheckResponseType) UnmarshalJSON(b []byte) error {
 		c.Name = v
 	case map[string]interface{}:
 		if len(v) != 1 {
-			return fmt.Errorf("Check detailed response `check.type` contains more than one object: %+v", v)
+			return fmt.Errorf("check detailed response `check.type` contains more than one object: %+v", v)
 		}
 		for k := range v {
 			c.Name = k
