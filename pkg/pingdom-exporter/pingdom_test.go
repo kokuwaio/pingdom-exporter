@@ -80,8 +80,9 @@ func TestDo(t *testing.T) {
 	body := new(foo)
 	want := &foo{"a"}
 
-	_, _ = client.Do(req, body)
+	resp, _ := client.Do(req, body)
 	assert.Equal(t, want, body)
+	defer resp.Body.Close()
 }
 
 func TestValidateResponse(t *testing.T) {

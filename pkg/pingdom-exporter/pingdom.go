@@ -1,6 +1,7 @@
 package pingdom
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -85,7 +86,7 @@ func (pc *Client) NewRequest(method string, rsc string, params map[string]string
 		baseURL.RawQuery = ps.Encode()
 	}
 
-	req, err := http.NewRequest(method, baseURL.String(), nil)
+	req, err := http.NewRequestWithContext(context.Background(), method, baseURL.String(), nil)
 	req.Header.Add("Authorization", "Bearer "+pc.Token)
 
 	return req, err

@@ -20,9 +20,12 @@ test:
 	go tool cover -func=coverage.out
 
 .PHONY: lint
-lint:
-	go install golang.org/x/lint/golint@latest
-	golint $(SRC_DIR)/...
+lint: ## Run golangci-lint linter
+	golangci-lint run
+
+.PHONY: lint-fix
+lint-fix: ## Run golangci-lint linter and perform fixes
+	golangci-lint run --fix
 
 # Build the Docker build stage TARGET
 .PHONY: image
