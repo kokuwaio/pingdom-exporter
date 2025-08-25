@@ -2,7 +2,7 @@ module github.com/monotek/pingdom-exporter
 
 require (
 	github.com/prometheus/client_golang v1.23.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 )
 
 require (
