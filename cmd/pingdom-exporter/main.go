@@ -160,7 +160,7 @@ func (pc pingdomCollector) Collect(ch chan<- prometheus.Metric) {
 	})
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error getting checks: %v", err)
+		fmt.Fprintf(os.Stderr, "Error getting checks: %v\n", err)
 		ch <- prometheus.MustNewConstMetric(
 			pingdomUpDesc,
 			prometheus.GaugeValue,
@@ -284,7 +284,7 @@ func (pc pingdomCollector) Collect(ch chan<- prometheus.Metric) {
 			})
 
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error getting outages for check %d: %v", check.ID, err)
+				fmt.Fprintf(os.Stderr, "Error getting outages for check %d: %v\n", check.ID, err)
 				return
 			}
 
