@@ -112,7 +112,7 @@ Docker image tags are published to [GHCR](https://github.com/kokuwaio/pingdom-ex
 
 All relevant commands are exposed via Makefile targets:
 
-```sh
+```shell
 # Build the binary
 make
 
@@ -127,4 +127,12 @@ make image
 
 # Push Docker images to registry
 make publish
+```
+
+Should you need to cross-compile for a different architecture, add the [relevant flags for your
+platform](https://pkg.go.dev/internal/platform) in front of your `make` command. By default the
+command produces the binary for the system and architecture it's being compiled on.
+
+```shell
+GOOS=linux GOARCH=amd64 make build
 ```
