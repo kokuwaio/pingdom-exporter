@@ -189,7 +189,7 @@ func (cr *CheckResponse) UptimeSLOFromTags(defaultUptimeSLO float64) float64 {
 			n, err := strconv.ParseFloat(matches[1], 64)
 
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error parsing uptime SLO tag %s: %v", matches[1], err)
+				fmt.Fprintf(os.Stderr, "Error parsing uptime SLO tag %s: %v\n", matches[1], err)
 				break
 			}
 
