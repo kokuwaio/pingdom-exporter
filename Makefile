@@ -1,4 +1,4 @@
-GO=CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go
+GO=CGO_ENABLED=0 go
 BIN=pingdom-exporter
 IMAGE=kokuwaio/$(BIN)
 DOCKER_BIN=docker
