@@ -83,6 +83,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      workflows: write
     runs-on: ubuntu-24.04
     if: github.actor == 'dependabot[bot]'
     steps:
