@@ -182,6 +182,8 @@ func (pc pingdomCollector) Collect(ch chan<- prometheus.Metric) {
 	)
 
 	var wg sync.WaitGroup
+	// Limit concurrent outage requests to avoid overwhelming the Pingdom API
+	semaphore := make(chan struct{}, 5)
 
 	for _, check := range checks {
 		// Ignore this check based on the presence of the ignore label
@@ -275,6 +277,9 @@ func (pc pingdomCollector) Collect(ch chan<- prometheus.Metric) {
 
 		go func(check pingdom.CheckResponse) {
 			defer wg.Done()
+			// Acquire semaphore slot
+			semaphore <- struct{}{}
+			defer func() { <-semaphore }()
 
 			// Retrieve the list of outages within the outage period for the given check
 			now := time.Now()
