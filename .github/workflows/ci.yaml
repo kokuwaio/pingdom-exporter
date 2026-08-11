@@ -28,6 +28,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v7
 
+      - uses: actions/setup-go@v7
+        with:
+          go-version: stable
+
       - name: go test
         run: make test
 
@@ -83,7 +87,6 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-      workflows: write
     runs-on: ubuntu-24.04
     if: github.actor == 'dependabot[bot]'
     steps:
