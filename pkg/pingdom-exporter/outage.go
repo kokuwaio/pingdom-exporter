@@ -37,18 +37,16 @@ func (os *OutageSummaryService) List(checkID int, params ...map[string]string) (
 	}
 
 	// Check status code and parse error if needed
-	if c := resp.StatusCode; !(200 <= c && c <= 299) {
+	if c := resp.StatusCode; c < 200 || c > 299 {
 		m := &errorJSONResponse{}
-		json.Unmarshal(bodyBytes, &m)
-		if m.Error != nil {
+		if err := json.Unmarshal(bodyBytes, &m); err == nil && m.Error != nil {
 			return nil, m.Error
 		}
 		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
-	bodyString := string(bodyBytes)
 	m := &listOutageSummaryJSONResponse{}
-	err = json.Unmarshal([]byte(bodyString), &m)
+	err = json.Unmarshal(bodyBytes, &m)
 
 	return m.Summary.States, err
 }
