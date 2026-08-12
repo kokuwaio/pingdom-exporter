@@ -30,18 +30,23 @@ func (os *OutageSummaryService) List(checkID int, params ...map[string]string) (
 	}
 	defer resp.Body.Close()
 
-	if err := validateResponse(resp); err != nil {
-		return nil, err
-	}
-
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Println("Error reading response body:", err)
 		return nil, err
 	}
-	bodyString := string(bodyBytes)
+
+	// Check status code and parse error if needed
+	if c := resp.StatusCode; c < 200 || c > 299 {
+		m := &errorJSONResponse{}
+		if err := json.Unmarshal(bodyBytes, &m); err == nil && m.Error != nil {
+			return nil, m.Error
+		}
+		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
 	m := &listOutageSummaryJSONResponse{}
-	err = json.Unmarshal([]byte(bodyString), &m)
+	err = json.Unmarshal(bodyBytes, &m)
 
 	return m.Summary.States, err
 }
